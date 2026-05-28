@@ -463,7 +463,27 @@ body {
     padding: 12px 20px;
     color: rgba(255,230,215,0.85);
 }
+.memory-card {
+    transition:
+        opacity 1.8s ease,
+        transform 1.8s ease,
+        filter 1.8s ease;
+}
 
+.story-scene {
+    transition:
+        opacity 1s ease,
+        transform 1s ease;
+}
+
+.card-img {
+    transition:
+        transform 2s ease;
+}
+
+.memory-card.active .card-img {
+    transform: scale(1.05);
+}
 /* ══════════════════════════════════════
    SCENE 5 · WISHES
 ══════════════════════════════════════ */
