@@ -41,29 +41,43 @@ const volMap = { 0:0.42, 1:0.78, 2:0.58, 3:0.52, 4:0.68, 5:0.58, 6:0.62 };
 function crossfadeTo(sceneIdx) {
     const src = musicMap[sceneIdx];
     const vol = volMap[sceneIdx] || 0.6;
+
     if (!src || activeSrc === src) return;
     activeSrc = src;
 
-    secondary.src           = src;
-    secondary.currentTime   = 0;
-    secondary.volume        = 0;
+    if (secondary.src !== new URL(src, window.location.href).href) {
+        secondary.src = src;
+        secondary.load();
+    }
+
+    secondary.currentTime = 0;
+    secondary.volume = 0;
 
     const promise = secondary.play();
+
     const doFade = () => {
-        // fade out primary track
-        gsap.to(primary, { volume: 0, duration: 0.9, ease: 'power2.inOut',
-            onComplete: () => { primary.pause(); primary.currentTime = 0; }
+        gsap.to(primary, {
+            volume: 0,
+            duration: 2,
+            ease: "power2.inOut",
+            onComplete: () => {
+                primary.pause();
+                primary.currentTime = 0;
+            }
         });
-        // fade in secondary track
-        gsap.to(secondary, { volume: vol, duration: 0.9, ease: 'power2.inOut' });
-        // swap roles
+
+        gsap.to(secondary, {
+            volume: vol,
+            duration: 2,
+            ease: "power2.inOut"
+        });
+
         [primary, secondary] = [secondary, primary];
     };
 
-    (promise !== undefined)
-        ? promise.then(doFade).catch(e => console.warn('audio play:', e))
-        : doFade();
+    promise?.then(doFade).catch(console.warn);
 }
+
 
 // ─────────────────── ASSET PRELOAD ───────────────────
 const imageList  = Array.from({ length: 11 }, (_, i) => `images/img${i+1}.jpg`);
@@ -150,25 +164,49 @@ function activateScene(idx) {
 }
 
 function nextScene() {
+function nextScene() {
     if (isTransitioning) return;
     if (currentScene < 0 || currentScene >= scenes.length - 1) return;
+
     isTransitioning = true;
     clearTimers();
 
-    // Dark flash (brief, not a full black-out)
     gsap.to(transOverlay, {
-        opacity: 0.65, duration: 0.28, ease: 'power2.in',
+        opacity: 0.45,
+        duration: 0.7,
+        ease: "power2.inOut",
+
         onComplete: () => {
+
             activateScene(currentScene + 1);
 
-            // Music starts crossfading at the same moment the new scene appears
+            gsap.fromTo(
+                scenes[currentScene],
+                {
+                    opacity: 0,
+                    scale: 1.03
+                },
+                {
+                    opacity: 1,
+                    scale: 1,
+                    duration: 1.2,
+                    ease: "power2.out"
+                }
+            );
+
             crossfadeTo(currentScene);
 
-            gsap.to(transOverlay, { opacity: 0, duration: 0.55, ease: 'power2.out' });
+            gsap.to(transOverlay, {
+                opacity: 0,
+                duration: 0.9,
+                ease: "power2.inOut"
+            });
 
-            if (navigator.vibrate) navigator.vibrate(18);
             handleSceneEnter(currentScene);
-            setTimeout(() => { isTransitioning = false; }, 650);
+
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 1200);
         }
     });
 }
@@ -360,7 +398,7 @@ function startPhotoSlideshow() {
         } else {
             show(idx);
         }
-    }, 6545);
+    }, 8000);
 }
 
 // ─── SCENE 5 · WISHES (36 sec) ───
@@ -506,3 +544,20 @@ if (assetsLoaded >= assetsToLoad && !storyReady) {
     storyReady = true;
     revealTapScreen();
 }
+
+
+[audioA, audioB].forEach(audio => {
+
+    audio.addEventListener("ended", () => {
+        console.log("Track finished");
+    });
+
+    audio.addEventListener("error", (e) => {
+        console.error("Audio error:", e);
+    });
+
+    audio.addEventListener("stalled", () => {
+        console.log("Audio stalled");
+    });
+
+});
